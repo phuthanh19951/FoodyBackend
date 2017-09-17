@@ -110,7 +110,7 @@ class PostController extends Controller
         $response['status'] = 0;
       }
 
-      return \Response::json(1);
+      return \Response::json($response);
 
     }
 

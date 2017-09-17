@@ -13,9 +13,6 @@ use Illuminate\Http\Request;
 |
 */
 
-//Route::middleware('auth:api')->get('/user', function (Request $request) {
-//    return $request->user();
-//});
 
 
 Route::group ( [
@@ -28,6 +25,7 @@ Route::group ( [
 
   Route::get('province','CommonController@getProvince');
   Route::get('category','CommonController@getCategoryPost');
+  Route::post('login','CommonController@userLogin');
   Route::get('district/{provinceId}','CommonController@getDistrictByProvinceId');
 
   //Route for searching post

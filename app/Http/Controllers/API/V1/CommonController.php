@@ -5,7 +5,9 @@ namespace App\Http\Controllers\API\V1;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Auth;
 use Response;
+use App\Models\User;
 
 class CommonController extends Controller
 {
@@ -24,7 +26,7 @@ class CommonController extends Controller
       ];
 
       $provinces = DB::select('
-        select count(tbl_post.province) as numberpost , province.name , province.provinceid
+        select count(tbl_post.province) as numberpost ,province.name , province.provinceid
         from province
         left join tbl_post
         on  province.provinceid = tbl_post.province
@@ -76,6 +78,28 @@ class CommonController extends Controller
       }
 
       return Response::json($response);
+    }
+
+    public function userLogin(){
+      $response = [
+          'status' => '401',
+          'data'   => ''
+      ];
+
+      $content = [
+          'email' => $_POST['email'],
+          'password' => $_POST['password']
+      ];
+
+//      $checkRemember = $request->input('remember') ? true : false;
+
+      if( Auth::guard('admin')->attempt($content,true) ){
+        $response['status'] = 200;
+        $response['data'] = User::where('email',$content['email'])->get();
+      }
+
+      return Response::json($response);
+
     }
 
 }
