@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use Illuminate\Auth\Access\Response;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -38,11 +40,24 @@ class UserController extends Controller
     {
         //
       $response = array(
-          'status' => 0,
+          'status' => 204,
           'data'   => ''
       );
 
-      
+      if( count(User::where('email',$_POST['email'])->get()) == 0 ){
+       $user = User::create([
+            'email'     => $_POST['email'],
+            'password'  => Hash::make($_POST['password']),
+            'fullname'  => $_POST['fullname'],
+            'url_image' => 'public/uploads/avatar/user.png'
+        ]);
+       // Check create success.
+        if(!empty($user->id)){
+          $response['status'] = 200;
+        };
+      }
+
+      return \Response::json($response);
 
     }
 

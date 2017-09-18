@@ -36,5 +36,6 @@ Route::group ( [
   Route::resource('posts','PostController');
   // Route for Subcomment Resource
   Route::resource('subcomments','SubCommentController');
-
+  // Route for User Resource
+  Route::resource('users','UserController');
 });
