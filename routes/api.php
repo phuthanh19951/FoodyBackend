@@ -27,6 +27,8 @@ Route::group ( [
   Route::get('category','CommonController@getCategoryPost');
   Route::post('login','CommonController@userLogin');
   Route::get('district/{provinceId}','CommonController@getDistrictByProvinceId');
+  Route::get('getcommentsmodal','CommonController@getCommentsModal');
+
 
   //Route for searching post
   Route::get('searchname','PostController@searchByName');
@@ -34,6 +36,8 @@ Route::group ( [
 
   // Route for Post Resource
   Route::resource('posts','PostController');
+//  // Route for Comment Resource
+//  Route::resource('comments','CommentController');
   // Route for Subcomment Resource
   Route::resource('subcomments','SubCommentController');
   // Route for User Resource
