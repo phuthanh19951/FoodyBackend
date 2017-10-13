@@ -34,10 +34,13 @@ Route::group ( [
   Route::get('searchname','PostController@searchByName');
   Route::get('getimages/{postid}/{typeid?}','ImagesController@getImages');
 
+
+  //Route for Image Resource
+  Route::resource('images','ImagesController');
   // Route for Post Resource
   Route::resource('posts','PostController');
 //  // Route for Comment Resource
-//  Route::resource('comments','CommentController');
+  Route::resource('comments','CommentController');
   // Route for Subcomment Resource
   Route::resource('subcomments','SubCommentController');
   // Route for User Resource
