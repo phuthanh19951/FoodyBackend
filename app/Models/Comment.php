@@ -33,7 +33,7 @@ class Comment extends Model
   }
 
   public function Images(){
-    return $this->hasMany('App\Models\CommentImage');
+    return $this->hasMany('App\Models\Image');
 
   }
 }
