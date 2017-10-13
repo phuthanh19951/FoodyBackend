@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\V1;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\SubComment;
+use Illuminate\Support\Facades\DB;
 
 class SubCommentController extends Controller
 {
@@ -37,7 +38,8 @@ class SubCommentController extends Controller
     public function store(Request $request)
     {
         $response = array(
-          'status' => 201
+            'status' => 201,
+            'data'   => array()
         );
 
         $subComment = new SubComment();
@@ -48,6 +50,11 @@ class SubCommentController extends Controller
 
         if($subComment->save()){
           $response['status'] = 200;
+          $response['data'] = DB::table('tbl_sub_comment')
+              ->select('tbl_sub_comment.content','tbl_users.fullname','tbl_users.url_image','tbl_sub_comment.created_at')
+              ->join('tbl_users','tbl_sub_comment.user_id','tbl_users.id')
+              ->where('tbl_sub_comment.id',$subComment->id)
+              ->get();
         }
 
         return \Response::json($response);
