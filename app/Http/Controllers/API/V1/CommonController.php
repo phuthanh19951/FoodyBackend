@@ -108,10 +108,13 @@ class CommonController extends Controller
 
       $response = array(
           'status'     => 204,
-          'data'       => ''
+          'data'       => array(
+              'detail' => array(),
+              'comment' => array()
+          ),
       );
 
-      $response['data']['detail'] = Post::join('tbl_image','tbl_post.thumb_id','tbl_image.id')
+      $response['data']['detail'] = Post::leftjoin('tbl_image','tbl_post.thumb_id','tbl_image.id')
           ->select($this->getColumnPost())
           ->find($_GET['id']);
 
@@ -122,7 +125,7 @@ class CommonController extends Controller
       },'Images'=>function($query){
         $query->select('name','comment_id','url_image');
       }))->where('post_id',$_GET['id'])
-          ->select('id','content','user_id','created_at')
+          ->select('id','content','title','cnt_mark','user_id','created_at')
           ->get();
 
       $response['data']['detail']['number_comment'] = count($response['data']['comment']);
