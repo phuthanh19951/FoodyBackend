@@ -94,7 +94,7 @@ class PostController extends Controller
                           subcomment.a = tbl_comment.created_at
                            ) comment ON comment.user_id = tbl_users.id
                              ) comment ON tbl_post.id = comment.post_id
-                                ) AS table1 INNER JOIN (
+                                ) AS table1 LEFT JOIN (
                                      SELECT
                                       count(post_id) AS images,
                                       post_id
@@ -152,7 +152,7 @@ class PostController extends Controller
       $post->latitude = floatval($_POST['latitude']);
       $post->longitude = floatval($_POST['longitude']);
       $post->category_id = intval($_POST['category_id']);
-      $post->thumb_id = 46;
+      $post->thumb_id = 0;
       $post->capacity = intval($_POST['capacity']);
       $post->status = 0;
       $post->district = $_POST['district'];
@@ -189,67 +189,84 @@ class PostController extends Controller
     public function show($id)
     {
       $response = array(
-          'status'     => 204,
-          'data'       => '',
+          'status'     => 200,
+          'data'       => array(
+              'detail' => array(),
+              'imageList' => array(),
+              'comment' => array(),
+              'menu' => array(),
+              'categoryList' => array(),
+              'locationList' => array(),
+          ),
           'statusPost' => false
       );
 
-      $response['data']['detail'] = Post::join('tbl_image','tbl_post.thumb_id','tbl_image.id')
+      $response['data']['detail'] = $this->cvf_convert_object_to_array(DB::table('tbl_post')
           ->select($this->getColumnPost())
-          ->find($id);
+          ->leftjoin('tbl_image','tbl_post.thumb_id','tbl_image.id')
+          ->join('tbl_category','tbl_post.category_id','tbl_category.id')
+          ->where('tbl_post.id',$id)
+          ->first());
 
-      $response['data']['imageList'] = Image::selectRaw('count(category_image) as number_image , category_image , url_image')
-          ->where('post_id',$id)
-          ->groupby('category_image')->get();
+      if( !empty($response['data']['detail'])) {
 
-      $response['data']['comment'] = Comment::with(array('User'=>function($query){
-        $query->select('id','url_image','fullname');
-      },'SubComments.User'=>function($query){
-        $query->select('id','url_image','fullname');
-      },'Images'=>function($query){
-        $query->select('name','comment_id','url_image');
-      }))->where('post_id',$id)
-          ->select('id','content','user_id','created_at')
-          ->get();
+        $response['data']['imageList'] = Image::selectRaw('count(category_image) as number_image , category_image , url_image')
+            ->where('post_id', $id)
+            ->groupby('category_image')->get();
 
-      $response['data']['menu'] = Food::where('post_id',$id)->get();
+        $response['data']['comment'] = Comment::with(array('User' => function ($query) {
+          $query->select('id', 'url_image', 'fullname');
+        }, 'SubComments.User' => function ($query) {
+          $query->select('id', 'url_image', 'fullname');
+        }, 'Images' => function ($query) {
+          $query->select('name', 'comment_id', 'url_image');
+        }))->where('post_id', $id)
+            ->select('id', 'title', 'cnt_mark', 'content', 'user_id', 'created_at')
+            ->get();
 
-      $response['data']['categoryList'] = DB::select('
-        SELECT tbl_category.id , tbl_category.name , IFNULL(tbl_category_temp.quantity_post,0) as quantity_post FROM tbl_category left join
-  (
-            SELECT count(id) as quantity_post , category_id
+        $response['data']['menu'] = Food::where('post_id', $id)->get();
+
+        $response['data']['categoryList'] = DB::select('
+          SELECT tbl_category.id,tbl_category.name,IFNULL(tbl_category_temp.quantity_post,0) as quantity_post 
+          FROM tbl_category 
+          left join
+         (
+            SELECT count(id) as quantity_post,category_id
             from(
             SELECT
               id,category_id,
-              6371 * (
-                acos(cos(radians(' . $response['data']['detail']['latitude'] . ')) *
-                     cos(radians(latitude)) *
-                     cos(radians(longitude) - radians(' . $response['data']['detail']['longitude'] . ')) + sin(radians(' . $response['data']['detail']['latitude'] . ')) *
-                                                                     sin(radians(latitude)))) AS distance
-            FROM tbl_post
-            WHERE deleted_at is null
-            HAVING distance <= 2
-           ) a
-           GROUP BY category_id
-          ) as tbl_category_temp on tbl_category.id = tbl_category_temp.category_id
-        ');
-
-      $response['data']['locationList'] = DB::select('
-            SELECT
-             id,title,latitude,longitude,category_id,
-              6371 * (
-                acos(cos(radians(' . $response['data']['detail']['latitude'] . ')) *
-                     cos(radians(latitude)) *
-                     cos(radians(longitude) - radians(' . $response['data']['detail']['longitude'] . ')) + sin(radians(' . $response['data']['detail']['latitude'] . ')) *
-                                                                     sin(radians(latitude)))) AS distance
-            FROM tbl_post
-            WHERE deleted_at is null
-            HAVING distance <= 2
+               6371 * (
+                 acos(cos(radians(' . $response['data']['detail']['latitude'] . ')) *
+                   cos(radians(latitude)) *
+                    cos(radians(longitude) - radians(' . $response['data']['detail']['longitude'] . ')) + sin(radians(' . $response['data']['detail']['latitude'] . ')) *
+                                                     sin(radians(latitude)))) AS distance
+              FROM tbl_post
+              WHERE deleted_at is null
+              HAVING distance <= 2
+             ) a
+             GROUP BY category_id
+            ) as tbl_category_temp on tbl_category.id = tbl_category_temp.category_id
           ');
 
-      // Check restaurant's status
-      if (strtotime($response['data']['detail']['start_time']) <= strtotime("now") && strtotime($response['data']['detail']['end_time']) >= strtotime("now")) {
-        $response['statusPost'] = true;
+        $response['data']['locationList'] = DB::select('
+              SELECT
+               id,title,latitude,longitude,category_id,
+                6371 * (
+                  acos(cos(radians(' . $response['data']['detail']['latitude'] . ')) *
+                       cos(radians(latitude)) *
+                       cos(radians(longitude) - radians(' . $response['data']['detail']['longitude'] . ')) + sin(radians(' . $response['data']['detail']['latitude'] . ')) *
+                                                                       sin(radians(latitude)))) AS distance
+              FROM tbl_post
+              WHERE deleted_at is null
+              HAVING distance <= 2
+            ');
+
+        // Check restaurant's status
+        if (strtotime($response['data']['detail']['start_time']) <= strtotime("now") && strtotime($response['data']['detail']['end_time']) >= strtotime("now")) {
+          $response['statusPost'] = true;
+        }
+      }else{
+        $response['status'] = 204;
       }
 
       return \Response::json($response);
@@ -300,7 +317,7 @@ class PostController extends Controller
       ];
 
       $postList = DB::table('tbl_post')
-          ->select('title','address','start_time','end_time','province','status','tbl_image.url_image')
+          ->select('tbl_post.id','title','address','start_time','end_time','province','status','tbl_image.url_image')
           ->leftjoin('tbl_image','tbl_post.thumb_id','=','tbl_image.id')
           ->where('province',$_GET['province'])
           ->get();
@@ -351,6 +368,13 @@ class PostController extends Controller
           $queryString .= ' and ' . $prefixTable . '.' . 'avg_food_price' . ' >= ' . 4000000;
         }
       }
+
+      if(isset($arrayParam['limitStart']) && is_numeric($arrayParam['limitStart'])){
+        if(isset($arrayParam['limitEnd']) && is_numeric($arrayParam['limitEnd'])) {
+          $queryString .= ' LIMIT ' . $arrayParam['limitStart']. ',' . $arrayParam['limitEnd'];
+        }
+      }
+
       return $queryString;
     }
 
@@ -390,7 +414,8 @@ class PostController extends Controller
                    'tbl_post.avg_mark_serve',
                    'tbl_post.avg_mark_space',
                    'tbl_post.avg_mark_price',
-                   'tbl_image.url_image'
+                   'tbl_image.url_image',
+                   'tbl_category.name'
           );
     }
 
