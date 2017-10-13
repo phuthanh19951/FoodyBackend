@@ -18,6 +18,7 @@ class Image extends Model
       "post_id",
       "url_image",
       "insert_id",
+      "comment_id"
   ];
 
   public function Post(){
